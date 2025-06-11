@@ -5,24 +5,37 @@ import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 
-# Define model path and download URL
-MODEL_PATH = 'model/final_finetuned_model.h5'
-MODEL_URL = 'https://drive.google.com/uc?id=1oX25iHg87JEe8rS06U1t2-8ko1pyoptW'
+# File settings
+MODEL_DIR = "model"
+MODEL_FILE = "final_finetuned_model.keras"
+MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 
-# Check if model exists, if not download it
+# Public link from Google Drive (ID only)
+FILE_ID = "1oX25iHg87JEe8rS06U1t2-8ko1pyoptW"
+MODEL_URL = f"https://drive.google.com/uc?id={FILE_ID}"
+
+# Create folder and download if missing
 if not os.path.exists(MODEL_PATH):
-    with st.spinner("⏳ Downloading model file..."):
-        os.makedirs("model", exist_ok=True)
+    st.warning("🔄 Downloading model (may take a moment)...")
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    try:
         gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
-        st.success("✅ Model downloaded!")
+        st.success("✅ Model downloaded successfully!")
+    except Exception as e:
+        st.error(f"❌ Failed to download model: {e}")
+        st.stop()
 
 # Load the model
-model = load_model(MODEL_PATH)
+try:
+    model = load_model(MODEL_PATH)
+except Exception as e:
+    st.error("❌ Error loading the model. It may be incompatible or corrupted.")
+    st.stop()
 
 # Class labels
 class_labels = ['Benign', 'Malignant', 'Normal']
 
-# Preprocessing function
+# Preprocess function
 def preprocess_image(image, img_size=128):
     img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     img = cv2.resize(img, (img_size, img_size))
@@ -32,7 +45,7 @@ def preprocess_image(image, img_size=128):
 
 # Streamlit UI
 st.title("🩺 Breast Cancer Detection")
-st.write("Upload a breast scan image to detect **Benign**, **Malignant**, or **Normal** cases.")
+st.write("Upload a breast scan to detect **Benign**, **Malignant**, or **Normal** cases.")
 
 uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'])
 
